@@ -4,26 +4,43 @@ on:
   push:
     branches:
       - main
-  pull_request:
 
 jobs:
   build:
-    name: Build and Publish Docker Image
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
 
     steps:
-    # Étape 1 : Récupérer le code source
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v3  # Utiliser la dernière version de l'action
 
-    # Étape 2 : Connexion au registre GitHub Container Registry
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2  # Utiliser la dernière version de l'action
+
+    - name: Cache Docker layers
+      uses: actions/cache@v3  # Utiliser la dernière version de l'action
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-
+
     - name: Log in to GitHub Container Registry
-      run: echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      uses: docker/login-action@v2  # Utiliser la dernière version de l'action
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GHCR_PAT }}
 
-    # Étape 3 : Construire l'image Docker
-    - name: Build Docker image
-      run: docker build -t ghcr.io/${{ github.repository_owner }}/${{ github.repository }}:latest .
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v4  # Utiliser la dernière version de l'action
+      with:
+        context: .
+        push: true
+        tags: ghcr.io/Evans-Onguene/ue19-lab-05-:latest
 
-    # Étape 4 : Publier l'image Docker dans GitHub Container Registry
-    - name: Push Docker image to GitHub Packages
-      run: docker push ghcr.io/${{ github.repository_owner }}/${{ github.repository }}:latest
+    - name: Scan Docker image with Trivy
+      uses: aquasecurity/trivy-action@v0.20.0  # Utiliser la version correcte trouvée
+      with:
+        image-ref: ghcr.io/Evans-Onguene/ue19-lab-05-:latest
+        format: 'table'  # Format de sortie du rapport (table ou json)
+        exit-code: 1  # Retourne un code de sortie non nul en cas de vulnérabilités
