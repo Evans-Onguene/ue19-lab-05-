@@ -42,4 +42,3 @@ jobs:
         context: .
         push: true
         tags: ghcr.io/evans-onguene/ue19-lab-05-:latest
-mm
