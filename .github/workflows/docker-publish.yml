@@ -37,4 +37,8 @@ jobs:
 
     # Étape 5 : Construire et publier l'image Docker
     - name: Build and push Docker image
-      uses: docker/build-push-action@v
+      uses: docker/build-push-action@v4  # Corrigez la version de l'action
+      with:
+        context: .
+        push: true
+        tags: ghcr.io/Evans-Onguene/ue19-lab-05-:latest
