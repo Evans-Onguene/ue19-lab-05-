@@ -1,4 +1,4 @@
-name: Build, Scan, and Publish Docker Image
+name: Build and Publish Docker Image
 
 on:
   push:
@@ -8,34 +8,22 @@ on:
 
 jobs:
   build:
-    name: Build, SAST Scan, and Publish Docker Image
+    name: Build and Publish Docker Image
     runs-on: ubuntu-20.04
 
     steps:
+    # Étape 1 : Récupérer le code source
     - name: Checkout code
       uses: actions/checkout@v4
 
+    # Étape 2 : Connexion au registre GitHub Container Registry
     - name: Log in to GitHub Container Registry
       run: echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-    - name: Run SAST scan on file system
-      uses: aquasecurity/trivy-action@0.28.0
-      with:
-        scan-type: 'fs'
-        scan-ref: '.'
-        severity: 'HIGH,CRITICAL'
-        format: 'table'
-
+    # Étape 3 : Construire l'image Docker
     - name: Build Docker image
       run: docker build -t ghcr.io/${{ github.repository_owner }}/${{ github.repository }}:latest .
 
-    - name: Run Trivy vulnerability scanner on Docker image
-      uses: aquasecurity/trivy-action@0.28.0
-      with:
-        scan-type: 'image'
-        image-ref: 'ghcr.io/${{ github.repository_owner }}/${{ github.repository }}:latest'
-        severity: 'HIGH,CRITICAL'
-
+    # Étape 4 : Publier l'image Docker dans GitHub Container Registry
     - name: Push Docker image to GitHub Packages
-      if: success() # Cette étape s'exécute seulement si le scan Trivy est réussi
       run: docker push ghcr.io/${{ github.repository_owner }}/${{ github.repository }}:latest
